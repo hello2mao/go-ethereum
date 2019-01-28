@@ -140,6 +140,7 @@ func ApplyTransaction(config *params.ChainConfig, dposContext *types.DposContext
 	return receipt, gas, err
 }
 
+// 在一个新块打包时会执行所有块内的交易，如果发现交易类型不是之前的转账或者合约调用类型，那么会调用 `applyDposMessage` 进行处理。
 func applyDposMessage(dposContext *types.DposContext, msg types.Message) error {
 	switch msg.Type() {
 	case types.LoginCandidate:

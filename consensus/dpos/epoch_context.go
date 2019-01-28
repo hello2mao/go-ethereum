@@ -23,6 +23,9 @@ type EpochContext struct {
 }
 
 // countVotes
+// 计票
+// (1)先找出候选人对应投票人的列表
+// (2)所有投票人的余额作为票数累积到候选人的总票数中
 func (ec *EpochContext) countVotes() (votes map[common.Address]*big.Int, err error) {
 	votes = map[common.Address]*big.Int{}
 	delegateTrie := ec.DposContext.DelegateTrie()
@@ -34,6 +37,7 @@ func (ec *EpochContext) countVotes() (votes map[common.Address]*big.Int, err err
 	if !existCandidate {
 		return votes, errors.New("no candidates")
 	}
+	// // 遍历候选人列表
 	for existCandidate {
 		candidate := iterCandidate.Value
 		candidateAddr := common.BytesToAddress(candidate)
@@ -44,6 +48,7 @@ func (ec *EpochContext) countVotes() (votes map[common.Address]*big.Int, err err
 			existCandidate = iterCandidate.Next()
 			continue
 		}
+		// // 遍历候选人对应的投票人列表
 		for existDelegator {
 			delegator := delegateIterator.Value
 			score, ok := votes[candidateAddr]
@@ -51,6 +56,7 @@ func (ec *EpochContext) countVotes() (votes map[common.Address]*big.Int, err err
 				score = new(big.Int)
 			}
 			delegatorAddr := common.BytesToAddress(delegator)
+			// 获取投票人的余额作为票数累积到候选人的票数中
 			weight := statedb.GetBalance(delegatorAddr)
 			score.Add(score, weight)
 			votes[candidateAddr] = score
@@ -146,6 +152,11 @@ func (ec *EpochContext) lookupValidator(now int64) (validator common.Address, er
 	return validators[offset], nil
 }
 
+// 选举
+// 我们在打包每个块之前都会调用 tryElect 来看看当前块是否是新周期的第一块，如果是第一块则需要触发选举。 整体的选举的实现比较简单，主要是做了三个事情:
+// 1.根据上个周期出块的情况把一些被选上但出块数达不到要求的候选人踢掉
+// 2.截止到上一块为止，选出票数最高的前 N 个候选人作为验证人
+// 3.打乱验证人顺序
 func (ec *EpochContext) tryElect(genesis, parent *types.Header) error {
 	genesisEpoch := genesis.Time.Int64() / epochInterval
 	prevEpoch := parent.Time.Int64() / epochInterval
@@ -166,6 +177,7 @@ func (ec *EpochContext) tryElect(genesis, parent *types.Header) error {
 				return err
 			}
 		}
+		// 计票
 		votes, err := ec.countVotes()
 		if err != nil {
 			return err

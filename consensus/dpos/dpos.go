@@ -31,9 +31,9 @@ const (
 	extraSeal          = 65   // Fixed number of extra-data suffix bytes reserved for signer seal
 	inmemorySignatures = 4096 // Number of recent block signatures to keep in memory
 
-	blockInterval    = int64(10)
+	blockInterval    = int64(15)
 	epochInterval    = int64(86400)
-	maxValidatorSize = 21
+	maxValidatorSize = 8
 	safeSize         = maxValidatorSize*2/3 + 1
 	consensusSize    = maxValidatorSize*2/3 + 1
 )

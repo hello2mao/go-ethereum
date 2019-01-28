@@ -238,6 +238,7 @@ func (d *DposContext) KickoutCandidate(candidateAddr common.Address) error {
 }
 
 func (d *DposContext) BecomeCandidate(candidateAddr common.Address) error {
+	// 更新候选人树即可
 	candidate := candidateAddr.Bytes()
 	return d.candidateTrie.TryUpdate(candidate, candidate)
 }
@@ -246,6 +247,7 @@ func (d *DposContext) Delegate(delegatorAddr, candidateAddr common.Address) erro
 	delegator, candidate := delegatorAddr.Bytes(), candidateAddr.Bytes()
 
 	// the candidate must be candidate
+	// 投票(授权)之前需要先检查该账号是否候选人
 	candidateInTrie, err := d.candidateTrie.TryGet(candidate)
 	if err != nil {
 		return err
@@ -255,6 +257,7 @@ func (d *DposContext) Delegate(delegatorAddr, candidateAddr common.Address) erro
 	}
 
 	// delete old candidate if exists
+	// 如果投票人之前已经给其他人投过票则先取消之前的投票
 	oldCandidate, err := d.voteTrie.TryGet(delegator)
 	if err != nil {
 		if _, ok := err.(*trie.MissingNodeError); !ok {
@@ -264,6 +267,7 @@ func (d *DposContext) Delegate(delegatorAddr, candidateAddr common.Address) erro
 	if oldCandidate != nil {
 		d.delegateTrie.Delete(append(oldCandidate, delegator...))
 	}
+	// 更新候选人对应的授权列表
 	if err = d.delegateTrie.TryUpdate(append(candidate, delegator...), delegator); err != nil {
 		return err
 	}

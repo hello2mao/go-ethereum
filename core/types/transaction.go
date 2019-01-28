@@ -36,11 +36,11 @@ import (
 type TxType uint8
 
 const (
-	Binary TxType = iota
-	LoginCandidate
-	LogoutCandidate
-	Delegate
-	UnDelegate
+	Binary          TxType = iota // 之前的转账或者合约调用交易
+	LoginCandidate                // 成为候选人
+	LogoutCandidate               // 退出候选人
+	Delegate                      // 投票(授权)
+	UnDelegate                    // 取消投票(授权)
 )
 
 var (

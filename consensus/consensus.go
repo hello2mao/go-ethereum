@@ -57,38 +57,46 @@ type Engine interface {
 	// VerifyHeader checks whether a header conforms to the consensus rules of a
 	// given engine. Verifying the seal may be done optionally here, or explicitly
 	// via the VerifySeal method.
+	// 验证块头是否符合共识算法规则
 	VerifyHeader(chain ChainReader, header *types.Header, seal bool) error
 
 	// VerifyHeaders is similar to VerifyHeader, but verifies a batch of headers
 	// concurrently. The method returns a quit channel to abort the operations and
 	// a results channel to retrieve the async verifications (the order is that of
 	// the input slice).
+	// 批量验证块头是否符合共识算法规则
 	VerifyHeaders(chain ChainReader, headers []*types.Header, seals []bool) (chan<- struct{}, <-chan error)
 
 	// VerifyUncles verifies that the given block's uncles conform to the consensus
 	// rules of a given engine.
+	// 验证叔块是否符合共识算法规则, DPoS 没有叔块
 	VerifyUncles(chain ChainReader, block *types.Block) error
 
 	// VerifySeal checks whether the crypto seal on a header is valid according to
 	// the consensus rules of the given engine.
+	// 验证块内容是否符合共识算法规则
 	VerifySeal(chain ChainReader, header *types.Header) error
 
 	// Prepare initializes the consensus fields of a block header according to the
 	// rules of a particular engine. The changes are executed inline.
+	// 根据共识算法规则初始化块头信息
 	Prepare(chain ChainReader, header *types.Header) error
 
 	// Finalize runs any post-transaction state modifications (e.g. block rewards)
 	// and assembles the final block.
 	// Note: The block header and state database might be updated to reflect any
 	// consensus rules that happen at finalization (e.g. block rewards).
+	// 块内交易执行完成之后进行的相关更新操作(比如挖块激励等等)
 	Finalize(chain ChainReader, header *types.Header, state *state.StateDB, txs []*types.Transaction,
 		uncles []*types.Header, receipts []*types.Receipt, dposContext *types.DposContext) (*types.Block, error)
 
 	// Seal generates a new block for the given input block with the local miner's
 	// seal place on top.
+	// 根据 Prepare 和 Finalize 生成的块内容以及共识算法产生一个新块
 	Seal(chain ChainReader, block *types.Block, stop <-chan struct{}) (*types.Block, error)
 
 	// APIs returns the RPC APIs this consensus engine provides.
+	// 该共识算法对外提供的 API 接口
 	APIs(chain ChainReader) []rpc.API
 }
 
