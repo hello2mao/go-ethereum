@@ -63,6 +63,27 @@ web3._extend({
 });
 `
 
+const Dpos_JS = `
+web3._extend({
+	property: 'dpos',
+	methods: [
+		new web3._extend.Method({
+			name: 'getValidators',
+			call: 'dpos_getValidators',
+			params: 1,
+			inputFormatter: [web3._extend.formatters.inputBlockNumberFormatter]
+		}),
+		new web3._extend.Method({
+			name: 'getConfirmedBlockNumber',
+			call: 'dpos_getConfirmedBlockNumber',
+			params: 0,
+			outputFormatter: web3._extend.utils.toBigNumber
+		}),
+	]
+});
+`
+
+
 const Clique_JS = `
 web3._extend({
 	property: 'clique',
@@ -462,6 +483,12 @@ web3._extend({
 		new web3._extend.Method({
 			name: 'stop',
 			call: 'miner_stop'
+		}),
+		new web3._extend.Method({
+			name: 'setValidator',
+			call: 'miner_setValidator',
+			params: 1,
+			inputFormatter: [web3._extend.formatters.inputAddressFormatter]
 		}),
 		new web3._extend.Method({
 			name: 'setEtherbase',

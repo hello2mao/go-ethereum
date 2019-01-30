@@ -49,6 +49,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/ethereum/go-ethereum/consensus/dpos"
 )
 
 type LesServer interface {
@@ -86,6 +87,7 @@ type Ethereum struct {
 
 	miner     *miner.Miner
 	gasPrice  *big.Int
+	validator common.Address
 	etherbase common.Address
 
 	networkID     uint64
@@ -128,6 +130,7 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 		shutdownChan:   make(chan bool),
 		networkID:      config.NetworkId,
 		gasPrice:       config.GasPrice,
+		validator:      config.Validator,
 		etherbase:      config.Etherbase,
 		bloomRequests:  make(chan chan *bloombits.Retrieval),
 		bloomIndexer:   NewBloomIndexer(chainDb, params.BloomBitsBlocks),
@@ -214,6 +217,9 @@ func CreateConsensusEngine(ctx *node.ServiceContext, config *ethash.Config, chai
 	if chainConfig.Clique != nil {
 		return clique.New(chainConfig.Clique, db)
 	}
+	if chainConfig.Dpos != nil {
+		return dpos.New(chainConfig.Dpos, db)
+	}
 	// Otherwise assume proof-of-work
 	switch config.PowMode {
 	case ethash.ModeFake:
@@ -298,6 +304,29 @@ func (s *Ethereum) APIs() []rpc.API {
 
 func (s *Ethereum) ResetWithGenesisBlock(gb *types.Block) {
 	s.blockchain.ResetWithGenesisBlock(gb)
+}
+
+func (s *Ethereum) Validator() (validator common.Address, err error) {
+	s.lock.RLock()
+	validator = s.validator
+	s.lock.RUnlock()
+
+	if validator != (common.Address{}) {
+		return validator, nil
+	}
+	if wallets := s.AccountManager().Wallets(); len(wallets) > 0 {
+		if accounts := wallets[0].Accounts(); len(accounts) > 0 {
+			return accounts[0].Address, nil
+		}
+	}
+	return common.Address{}, fmt.Errorf("validator address must be explicitly specified")
+}
+
+// set in js console via admin interface or wrapper from cli flags
+func (self *Ethereum) SetValidator(validator common.Address) {
+	self.lock.Lock()
+	self.validator = validator
+	self.lock.Unlock()
 }
 
 func (s *Ethereum) Etherbase() (eb common.Address, err error) {

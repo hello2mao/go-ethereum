@@ -31,8 +31,22 @@ import (
 
 //go:generate gencodec -type txdata -field-override txdataMarshaling -out gen_tx_json.go
 
+// transaction type
+type TxType uint8
+
+const (
+	Binary          TxType = iota // 之前的转账或者合约调用交易
+	LoginCandidate                // 成为候选人
+	LogoutCandidate               // 退出候选人
+	Delegate                      // 投票(授权)
+	UnDelegate                    // 取消投票(授权)
+)
 var (
-	ErrInvalidSig = errors.New("invalid transaction v, r, s values")
+	ErrInvalidSig     = errors.New("invalid transaction v, r, s values")
+	errNoSigner       = errors.New("missing signing methods")
+	ErrInvalidType    = errors.New("invalid transaction type")
+	ErrInvalidAddress = errors.New("invalid transaction payload address")
+	ErrInvalidAction  = errors.New("invalid transaction payload action")
 )
 
 type Transaction struct {
@@ -44,6 +58,7 @@ type Transaction struct {
 }
 
 type txdata struct {
+	Type         TxType          `json:"type"   gencodec:"required"`
 	AccountNonce uint64          `json:"nonce"    gencodec:"required"`
 	Price        *big.Int        `json:"gasPrice" gencodec:"required"`
 	GasLimit     uint64          `json:"gas"      gencodec:"required"`
@@ -66,20 +81,25 @@ type txdataMarshaling struct {
 	GasLimit     hexutil.Uint64
 	Amount       *hexutil.Big
 	Payload      hexutil.Bytes
+	Type         TxType
 	V            *hexutil.Big
 	R            *hexutil.Big
 	S            *hexutil.Big
 }
 
-func NewTransaction(nonce uint64, to common.Address, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte) *Transaction {
-	return newTransaction(nonce, &to, amount, gasLimit, gasPrice, data)
+func NewTransaction(txType TxType, nonce uint64, to common.Address, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte) *Transaction {
+	// compatible with raw transaction with to address is empty
+	if txType != Binary && (to == common.Address{}) {
+		return newTransaction(txType, nonce, nil, amount, gasLimit, gasPrice, data)
+	}
+	return newTransaction(txType, nonce, &to, amount, gasLimit, gasPrice, data)
 }
 
 func NewContractCreation(nonce uint64, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte) *Transaction {
-	return newTransaction(nonce, nil, amount, gasLimit, gasPrice, data)
+	return newTransaction(Binary, nonce, nil, amount, gasLimit, gasPrice, data)
 }
 
-func newTransaction(nonce uint64, to *common.Address, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte) *Transaction {
+func newTransaction(txType TxType, nonce uint64, to *common.Address, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte) *Transaction {
 	if len(data) > 0 {
 		data = common.CopyBytes(data)
 	}
@@ -90,6 +110,7 @@ func newTransaction(nonce uint64, to *common.Address, amount *big.Int, gasLimit 
 		Amount:       new(big.Int),
 		GasLimit:     gasLimit,
 		Price:        new(big.Int),
+		Type:         txType,
 		V:            new(big.Int),
 		R:            new(big.Int),
 		S:            new(big.Int),
@@ -107,6 +128,22 @@ func newTransaction(nonce uint64, to *common.Address, amount *big.Int, gasLimit 
 // ChainId returns which chain id this transaction was signed for (if at all)
 func (tx *Transaction) ChainId() *big.Int {
 	return deriveChainId(tx.data.V)
+}
+
+// Valid the transaction when the type isn't the binary
+func (tx *Transaction) Validate() error {
+	if tx.Type() != Binary {
+		if tx.Value().Uint64() != 0 {
+			return errors.New("transaction value should be 0")
+		}
+		if tx.To() == nil && tx.Type() != LoginCandidate && tx.Type() != LogoutCandidate {
+			return errors.New("receipient was required")
+		}
+		if tx.Data() != nil {
+			return errors.New("payload should be empty")
+		}
+	}
+	return nil
 }
 
 // Protected returns whether the transaction is protected from replay protection.
@@ -173,6 +210,7 @@ func (tx *Transaction) GasPrice() *big.Int { return new(big.Int).Set(tx.data.Pri
 func (tx *Transaction) Value() *big.Int    { return new(big.Int).Set(tx.data.Amount) }
 func (tx *Transaction) Nonce() uint64      { return tx.data.AccountNonce }
 func (tx *Transaction) CheckNonce() bool   { return true }
+func (tx *Transaction) Type() TxType       { return tx.data.Type }
 
 // To returns the recipient address of the transaction.
 // It returns nil if the transaction is a contract creation.
@@ -220,6 +258,7 @@ func (tx *Transaction) AsMessage(s Signer) (Message, error) {
 		to:         tx.data.Recipient,
 		amount:     tx.data.Amount,
 		data:       tx.data.Payload,
+		txType:     tx.data.Type,
 		checkNonce: true,
 	}
 
@@ -387,6 +426,7 @@ type Message struct {
 	gasPrice   *big.Int
 	data       []byte
 	checkNonce bool
+	txType                  TxType
 }
 
 func NewMessage(from common.Address, to *common.Address, nonce uint64, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte, checkNonce bool) Message {
@@ -399,6 +439,7 @@ func NewMessage(from common.Address, to *common.Address, nonce uint64, amount *b
 		gasPrice:   gasPrice,
 		data:       data,
 		checkNonce: checkNonce,
+
 	}
 }
 

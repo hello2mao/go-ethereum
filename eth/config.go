@@ -95,6 +95,7 @@ type Config struct {
 	TrieTimeout        time.Duration
 
 	// Mining-related options
+	Validator    common.Address `toml:",omitempty"`
 	Etherbase    common.Address `toml:",omitempty"`
 	MinerThreads int            `toml:",omitempty"`
 	ExtraData    []byte         `toml:",omitempty"`
@@ -114,6 +115,7 @@ type Config struct {
 
 	// Miscellaneous options
 	DocRoot string `toml:"-"`
+	Dpos      bool   `toml:"-"`
 }
 
 type configMarshaling struct {

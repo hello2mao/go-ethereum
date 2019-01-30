@@ -59,6 +59,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	whisper "github.com/ethereum/go-ethereum/whisper/whisperv6"
 	"gopkg.in/urfave/cli.v1"
+	"github.com/ethereum/go-ethereum/consensus/dpos"
 )
 
 var (
@@ -326,6 +327,11 @@ var (
 		Name:  "targetgaslimit",
 		Usage: "Target gas limit sets the artificial target gas floor for the blocks to mine",
 		Value: params.GenesisGasLimit,
+	}
+	ValidatorFlag = cli.StringFlag{
+		Name:  "validator",
+		Usage: "Public address for block mining signer (default = first account created)",
+		Value: "0",
 	}
 	EtherbaseFlag = cli.StringFlag{
 		Name:  "etherbase",
@@ -808,6 +814,27 @@ func MakeAddress(ks *keystore.KeyStore, account string) (accounts.Account, error
 	return accs[index], nil
 }
 
+// setValidator retrieves the validator either from the directly specified
+// command line flags or from the keystore if CLI indexed.
+func setValidator(ctx *cli.Context, ks *keystore.KeyStore, cfg *eth.Config) {
+	if ctx.GlobalIsSet(ValidatorFlag.Name) {
+		account, err := MakeAddress(ks, ctx.GlobalString(ValidatorFlag.Name))
+		if err != nil {
+			Fatalf("Option %q: %v", ValidatorFlag.Name, err)
+		}
+		cfg.Validator = account.Address
+		return
+	}
+	accounts := ks.Accounts()
+	if (cfg.Validator == common.Address{}) {
+		if len(accounts) > 0 {
+			cfg.Validator = accounts[0].Address
+		} else {
+			log.Warn("No validator set and no accounts found as default")
+		}
+	}
+}
+
 // setEtherbase retrieves the etherbase either from the directly specified
 // command line flags or from the keystore if CLI indexed.
 func setEtherbase(ctx *cli.Context, ks *keystore.KeyStore, cfg *eth.Config) {
@@ -1055,6 +1082,7 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *eth.Config) {
 	checkExclusive(ctx, LightServFlag, SyncModeFlag, "light")
 
 	ks := stack.AccountManager().Backends(keystore.KeyStoreType)[0].(*keystore.KeyStore)
+	setValidator(ctx, ks, cfg)
 	setEtherbase(ctx, ks, cfg)
 	setGPO(ctx, &cfg.GPO)
 	setTxPool(ctx, &cfg.TxPool)
@@ -1284,6 +1312,8 @@ func MakeChain(ctx *cli.Context, stack *node.Node) (chain *core.BlockChain, chai
 	var engine consensus.Engine
 	if config.Clique != nil {
 		engine = clique.New(config.Clique, chainDb)
+	} else if config.Dpos != nil {
+		engine = dpos.New(config.Dpos, chainDb)
 	} else {
 		engine = ethash.NewFaker()
 		if !ctx.GlobalBool(FakePoWFlag.Name) {

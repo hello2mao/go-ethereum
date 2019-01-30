@@ -67,6 +67,7 @@ type Work struct {
 	signer types.Signer
 
 	state     *state.StateDB // apply state changes here
+	dposContext *types.DposContext
 	ancestors *set.Set       // ancestor set (used for checking uncle parent validity)
 	family    *set.Set       // family set (used for checking uncle invalidity)
 	uncles    *set.Set       // uncle set
