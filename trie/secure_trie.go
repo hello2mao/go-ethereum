@@ -19,8 +19,8 @@ package trie
 import (
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum-dpos/common"
+	"github.com/ethereum/go-ethereum-dpos/log"
 )
 
 var secureKeyPrefix = []byte("secure-key-")

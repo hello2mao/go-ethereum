@@ -25,7 +25,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum-dpos/log"
 	"gopkg.in/fatih/set.v0"
 )
 

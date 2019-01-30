@@ -6,11 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/trie"
+	"github.com/ethereum/go-ethereum-dpos/common"
+	"github.com/ethereum/go-ethereum-dpos/core/state"
+	"github.com/ethereum/go-ethereum-dpos/core/types"
+	"github.com/ethereum/go-ethereum-dpos/ethdb"
+	"github.com/ethereum/go-ethereum-dpos/trie"
 
 	"github.com/stretchr/testify/assert"
 )

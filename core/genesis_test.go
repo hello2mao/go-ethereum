@@ -22,11 +22,11 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus/ethash"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum-dpos/common"
+	"github.com/ethereum/go-ethereum-dpos/consensus/ethash"
+	"github.com/ethereum/go-ethereum-dpos/core/vm"
+	"github.com/ethereum/go-ethereum-dpos/ethdb"
+	"github.com/ethereum/go-ethereum-dpos/params"
 )
 
 func TestSetupGenesis(t *testing.T) {

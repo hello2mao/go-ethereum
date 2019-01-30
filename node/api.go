@@ -22,11 +22,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/p2p/discover"
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/ethereum/go-ethereum-dpos/common/hexutil"
+	"github.com/ethereum/go-ethereum-dpos/crypto"
+	"github.com/ethereum/go-ethereum-dpos/p2p"
+	"github.com/ethereum/go-ethereum-dpos/p2p/discover"
+	"github.com/ethereum/go-ethereum-dpos/rpc"
 	"github.com/rcrowley/go-metrics"
 )
 
